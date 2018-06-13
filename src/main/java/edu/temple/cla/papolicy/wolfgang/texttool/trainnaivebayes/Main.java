@@ -106,7 +106,8 @@ public class Main implements Callable<Void> {
                 System.exit(1);
             }
             buildTrainingSets(ref, trainingSets, counts, docsInTrainingSet);
-            Set<String> cats = computePrior(trainingSets, ref, docsInTrainingSet, prior);
+            Set<String> cats = trainingSets.keySet();
+            computePrior(cats, ref, docsInTrainingSet, prior);
             computeConditionalProbs(vocabulary, cats, trainingSets, condProb);
             
         } catch (Exception ex) {
@@ -120,30 +121,29 @@ public class Main implements Callable<Void> {
             Map<String, Map<String, Double>> condProb) {
         vocabulary.getWordList().forEach(word -> {
             int countOfWord = vocabulary.getWordCount(word);
-            cats.forEach(cat -> {
+            Map<String, Double> probsForCat = condProb.get(word);
+            if (probsForCat == null) {
+                probsForCat = new TreeMap<>();
+                condProb.put(word, probsForCat);
+            }
+            for (String cat : cats) {
                 WordCounter countsForCat = trainingSets.get(cat);
                 int countOfWordInCat = countsForCat.getCount(word);
                 double condProbOfWordInCat =
                         (double)(countOfWordInCat + 1)/(countOfWord + 1);
-                Map<String, Double> probsForCat = condProb.get(cat);
-                if (probsForCat == null) {
-                    probsForCat = new TreeMap<>();
-                }
-                probsForCat.put(word, condProbOfWordInCat);
-            });
+                probsForCat.put(cat, condProbOfWordInCat);
+            }
         });
     }
 
-    public Set<String> computePrior(Map<String, WordCounter> trainingSets, 
+    public void computePrior(Set<String> cats,
             List<String> ref, Map<String, Integer> docsInTrainingSet, 
             Map<String, Double> prior) {
-        Set<String> cats = trainingSets.keySet();
         int docCount = ref.size();
         cats.forEach(cat -> {
             double priorForCat = (double)docsInTrainingSet.get(cat)/docCount;
             prior.put(cat, priorForCat);
         });
-        return cats;
     }
 
     public void buildTrainingSets(List<String> ref, 
