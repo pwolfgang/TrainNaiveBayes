@@ -29,8 +29,9 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package edu.temple.cla.papolicy.wolfgang.texttool.trainnaivebayes;
+package edu.temple.cla.papolicy.wolfgang.texttools.trainnaivebayes;
 
+import edu.temple.cla.papolicy.wolfgang.texttools.trainnaivebayes.Main;
 import edu.temple.cla.papolicy.wolfgang.texttools.util.CommonFrontEnd;
 import edu.temple.cla.papolicy.wolfgang.texttools.util.Vocabulary;
 import edu.temple.cla.papolicy.wolfgang.texttools.util.WordCounter;

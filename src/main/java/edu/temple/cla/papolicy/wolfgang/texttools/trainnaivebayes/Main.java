@@ -29,7 +29,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package edu.temple.cla.papolicy.wolfgang.texttool.trainnaivebayes;
+package edu.temple.cla.papolicy.wolfgang.texttools.trainnaivebayes;
 
 import edu.temple.cla.papolicy.wolfgang.texttools.util.CommonFrontEnd;
 import edu.temple.cla.papolicy.wolfgang.texttools.util.Util;
@@ -99,21 +99,26 @@ public class Main implements Callable<Void> {
             Util.delDir(modelParent);
             modelParent.mkdirs();
             File vocabFile = new File(modelParent, "vocab.bin");
-            try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(vocabFile))) {
-                oos.writeObject(vocabulary);
-            } catch (Exception ex) {
-                ex.printStackTrace();
-                System.exit(1);
-            }
+            OutputFile(modelParent, "vocab.bin", vocabulary);
             buildTrainingSets(ref, trainingSets, counts, docsInTrainingSet);
             Set<String> cats = trainingSets.keySet();
             computePrior(cats, ref, docsInTrainingSet, prior);
+            OutputFile(modelParent, "prior.bin", prior);
             computeConditionalProbs(vocabulary, cats, trainingSets, condProb);
-            
+            OutputFile(modelParent, "condProp.bin", condProb);
         } catch (Exception ex) {
             ex.printStackTrace();
         }
         return null;
+    }
+
+    public void OutputFile(File modelParent, String name, Object vocabulary) {
+        File outFile = new File(modelParent, name);
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(outFile))) {
+            oos.writeObject(vocabulary);
+        } catch (Exception ex) {
+            throw new RuntimeException("Error writing " + outFile.getPath(), ex);
+        }
     }
 
     public void computeConditionalProbs(Vocabulary vocabulary, 

@@ -126,7 +126,7 @@
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>lib</classpathPrefix>
-                            <mainClass>edu.temple.cla.papolicy.wolfgang.texttools.trainusingsvm.Main</mainClass>
+                            <mainClass>edu.temple.cla.papolicy.wolfgang.texttools.trainnaivebayes.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>    
