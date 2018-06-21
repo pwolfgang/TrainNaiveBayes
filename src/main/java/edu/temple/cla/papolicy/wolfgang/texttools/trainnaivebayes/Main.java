@@ -133,7 +133,8 @@ public class Main implements Callable<Void> {
             }
             for (String cat : cats) {
                 WordCounter countsForCat = trainingSets.get(cat);
-                double probOfWordGivenCat = countsForCat.getLaplaseProb(word, vocabulary);
+                double probOfWordGivenCat = countsForCat.getLaplaseProb(word)
+                        .orElse(vocabulary.getLaplaseProb(word));
                 probsForCat.put(cat, probOfWordGivenCat);
             }
         });
