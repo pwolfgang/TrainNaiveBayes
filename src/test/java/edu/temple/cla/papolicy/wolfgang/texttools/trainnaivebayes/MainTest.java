@@ -58,7 +58,8 @@ public class MainTest {
                 "--table_name", "TestTable",
                 "--id_column", "ID",
                 "--text_column", "Abstract",
-                "--code_column", "Code"};
+                "--code_column", "Code",
+                "--remove_stopwords", "false"};
     Map<String, Integer> docsInTrainingSet = new TreeMap<>();
     Map<String, WordCounter> trainingSets = new TreeMap<>();
     Map<String, Double> prior = new TreeMap<>();

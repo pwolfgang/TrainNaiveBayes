@@ -55,7 +55,7 @@ public class Main implements Callable<Void> {
     private String outputVocab;
     
     @CommandLine.Option(names = "--model", description = "Directory where model files are written")
-    private String modelOutput = "SVM_Model_Dir";
+    private String modelOutput = "Model_Dir";
 
     private final String[] args;
     
@@ -98,7 +98,6 @@ public class Main implements Callable<Void> {
             File modelParent = new File(modelOutput);
             Util.delDir(modelParent);
             modelParent.mkdirs();
-            File vocabFile = new File(modelParent, "vocab.bin");
             OutputFile(modelParent, "vocab.bin", vocabulary);
             buildTrainingSets(ref, trainingSets, counts, docsInTrainingSet);
             Set<String> cats = trainingSets.keySet();
@@ -124,6 +123,7 @@ public class Main implements Callable<Void> {
     public void computeConditionalProbs(Vocabulary vocabulary, 
             Set<String> cats, Map<String, WordCounter> trainingSets, 
             Map<String, Map<String, Double>> condProb) {
+        vocabulary.computeProbabilities();
         vocabulary.getWordList().forEach(word -> {
             int countOfWord = vocabulary.getWordCount(word);
             Map<String, Double> probsForCat = condProb.get(word);
@@ -133,10 +133,8 @@ public class Main implements Callable<Void> {
             }
             for (String cat : cats) {
                 WordCounter countsForCat = trainingSets.get(cat);
-                int countOfWordInCat = countsForCat.getCount(word);
-                double condProbOfWordInCat =
-                        (double)(countOfWordInCat + 1)/(countOfWord + 1);
-                probsForCat.put(cat, condProbOfWordInCat);
+                double probOfWordGivenCat = countsForCat.getLaplaseProb(word, vocabulary);
+                probsForCat.put(cat, probOfWordGivenCat);
             }
         });
     }
