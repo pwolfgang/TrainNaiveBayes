@@ -47,19 +47,32 @@ import java.util.concurrent.Callable;
 import picocli.CommandLine;
 
 /**
- * Program to train a Naive Bayes Classifier.
+ * Program to train a Naive Bayes Classifier. This is the Trainer for the Naive
+ * Bayes classifier written from scratch that attempts to produce comparable
+ * results to <a href="http://mallet.cs.umass.edu/">MALLET</a>. In testing with
+ * the Bills_Data using the 2001-2013 sessions as training set and 2015 session
+ * as test set, this classifier achieves 72% accuracy while MALLET achieved 75%.
+ * It agrees with the MALLET classifier 82%. Of the 18% disagreements 4% where
+ * the correct result.
+ *
+ * The code is based on
+ * <a href="http://blog.datumbox.com/machine-learning-tutorial-the-naive-bayes-text-classifier/">
+ * Machine Learning Tutorial: The Native Bayes Text Classifier </a> and
+ * examination of the MALLET code.
+ *
  * @author Paul Wolfgang
  */
 public class Main implements Callable<Void> {
+
     @CommandLine.Option(names = "--output_vocab", description = "File where vocabulary is written")
     private String outputVocab;
-    
+
     @CommandLine.Option(names = "--model", description = "Directory where model files are written")
     private String modelOutput = "Model_Dir";
 
     private final String[] args;
-    
-    public Main(String [] args) {
+
+    public Main(String[] args) {
         this.args = args;
     }
 
@@ -76,6 +89,7 @@ public class Main implements Callable<Void> {
             throw new RuntimeException(ex);
         }
     }
+
     @Override
     public Void call() throws Exception {
         try {
@@ -120,8 +134,8 @@ public class Main implements Callable<Void> {
         }
     }
 
-    public void computeConditionalProbs(Vocabulary vocabulary, 
-            Set<String> cats, Map<String, WordCounter> trainingSets, 
+    public void computeConditionalProbs(Vocabulary vocabulary,
+            Set<String> cats, Map<String, WordCounter> trainingSets,
             Map<String, Map<String, Double>> condProb) {
         vocabulary.computeProbabilities();
         vocabulary.getWordList().forEach(word -> {
@@ -141,17 +155,17 @@ public class Main implements Callable<Void> {
     }
 
     public void computePrior(Set<String> cats,
-            List<String> ref, Map<String, Integer> docsInTrainingSet, 
+            List<String> ref, Map<String, Integer> docsInTrainingSet,
             Map<String, Double> prior) {
         int docCount = ref.size();
         cats.forEach(cat -> {
-            double priorForCat = (double)docsInTrainingSet.get(cat)/docCount;
+            double priorForCat = (double) docsInTrainingSet.get(cat) / docCount;
             prior.put(cat, priorForCat);
         });
     }
 
-    public void buildTrainingSets(List<String> ref, 
-            Map<String, WordCounter> trainingSets, List<WordCounter> counts, 
+    public void buildTrainingSets(List<String> ref,
+            Map<String, WordCounter> trainingSets, List<WordCounter> counts,
             Map<String, Integer> docsInTrainingSet) {
         for (int i = 0; i < ref.size(); i++) {
             String cat = ref.get(i);
@@ -163,10 +177,8 @@ public class Main implements Callable<Void> {
             countsForCat.updateCounts(counts.get(i));
             int numDocs = docsInTrainingSet.getOrDefault(cat, 0);
             numDocs++;
-            docsInTrainingSet.put(cat,numDocs);
+            docsInTrainingSet.put(cat, numDocs);
         }
     }
-    
-    
-}
 
+}
