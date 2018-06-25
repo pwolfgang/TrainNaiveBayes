@@ -112,27 +112,19 @@ public class Main implements Callable<Void> {
             File modelParent = new File(modelOutput);
             Util.delDir(modelParent);
             modelParent.mkdirs();
-            OutputFile(modelParent, "vocab.bin", vocabulary);
+            Util.outputFile(modelParent, "vocab.bin", vocabulary);
             buildTrainingSets(ref, trainingSets, counts, docsInTrainingSet);
             Set<String> cats = trainingSets.keySet();
             computePrior(cats, ref, docsInTrainingSet, prior);
-            OutputFile(modelParent, "prior.bin", prior);
+            Util.outputFile(modelParent, "prior.bin", prior);
             computeConditionalProbs(vocabulary, cats, trainingSets, condProb);
-            OutputFile(modelParent, "condProp.bin", condProb);
+            Util.outputFile(modelParent, "condProp.bin", condProb);
         } catch (Exception ex) {
             ex.printStackTrace();
         }
         return null;
     }
 
-    public void OutputFile(File modelParent, String name, Object vocabulary) {
-        File outFile = new File(modelParent, name);
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(outFile))) {
-            oos.writeObject(vocabulary);
-        } catch (Exception ex) {
-            throw new RuntimeException("Error writing " + outFile.getPath(), ex);
-        }
-    }
 
     public void computeConditionalProbs(Vocabulary vocabulary,
             Set<String> cats, Map<String, WordCounter> trainingSets,
