@@ -157,7 +157,7 @@ public class Main implements Callable<Void> {
     public Map<String, Double> computePrior(int docCount, Map<String, WordCounter> trainingSets) {
         Map<String, Double> prior = new HashMap<>();
         trainingSets.forEach((cat, count) -> {
-            double priorProb = count.getNumDocs() / docCount;
+            double priorProb = (double)count.getNumDocs() / (double)docCount;
             prior.put(cat, priorProb);
         });
         return prior;
