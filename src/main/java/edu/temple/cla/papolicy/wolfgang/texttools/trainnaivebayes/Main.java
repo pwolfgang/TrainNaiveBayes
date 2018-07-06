@@ -36,12 +36,12 @@ import edu.temple.cla.papolicy.wolfgang.texttools.util.Util;
 import edu.temple.cla.papolicy.wolfgang.texttools.util.Vocabulary;
 import edu.temple.cla.papolicy.wolfgang.texttools.util.WordCounter;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import picocli.CommandLine;
@@ -93,19 +93,12 @@ public class Main implements Callable<Void> {
     @Override
     public Void call() throws Exception {
         try {
-            List<String> ids = new ArrayList<>();
-            List<String> ref = new ArrayList<>();
-            List<WordCounter> counts = new ArrayList<>();
-            Map<String, WordCounter> trainingSets = new TreeMap<>();
-            Vocabulary vocabulary = new Vocabulary();
-            Map<String, Integer> docsInTrainingSet = new TreeMap<>();
-            Map<String, Double> prior = new TreeMap<>();
-            Map<String, Map<String, Double>> condProb = new TreeMap<>();
+            List<Map<String, Object>> cases = new ArrayList<>();
             CommonFrontEnd commonFrontEnd = new CommonFrontEnd();
             CommandLine commandLine = new CommandLine(commonFrontEnd);
             commandLine.setUnmatchedArgumentsAllowed(true);
             commandLine.parse(args);
-            commonFrontEnd.loadData(ids, ref, vocabulary, counts);
+            Vocabulary vocabulary = commonFrontEnd.loadData(cases);
             if (outputVocab != null) {
                 vocabulary.writeVocabulary(outputVocab);
             }
@@ -113,11 +106,12 @@ public class Main implements Callable<Void> {
             Util.delDir(modelParent);
             modelParent.mkdirs();
             Util.outputFile(modelParent, "vocab.bin", vocabulary);
-            buildTrainingSets(ref, trainingSets, counts, docsInTrainingSet);
-            Set<String> cats = trainingSets.keySet();
-            computePrior(cats, ref, docsInTrainingSet, prior);
+            Map<String, WordCounter> trainingSets = buildTrainingSets(cases);
+            Map<String, Double> prior = 
+                    computePrior(cases.size(), trainingSets);
             Util.outputFile(modelParent, "prior.bin", prior);
-            computeConditionalProbs(vocabulary, cats, trainingSets, condProb);
+            Map<String, Map<String, Double>> condProb = 
+                    computeConditionalProbs(vocabulary, trainingSets);
             Util.outputFile(modelParent, "condProp.bin", condProb);
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -125,11 +119,17 @@ public class Main implements Callable<Void> {
         return null;
     }
 
-
-    public void computeConditionalProbs(Vocabulary vocabulary,
-            Set<String> cats, Map<String, WordCounter> trainingSets,
-            Map<String, Map<String, Double>> condProb) {
-        vocabulary.computeProbabilities();
+    /**
+     * Compute the probability of each word in the vocabulary given that it 
+     * occurred in a document of a given category.
+     * 
+     * @param vocabulary The total vocabulary of all training sets.
+     * @param trainingSets The training sets grouped by category.
+     * @return condProb A map from words to a map from categories to probabilities.
+     */
+    public Map<String, Map<String, Double>> computeConditionalProbs(Vocabulary vocabulary,
+            Map<String, WordCounter> trainingSets) {
+        Map<String, Map<String, Double>> condProb = new HashMap<>();
         vocabulary.getWordList().forEach(word -> {
             int countOfWord = vocabulary.getWordCount(word);
             Map<String, Double> probsForCat = condProb.get(word);
@@ -137,40 +137,51 @@ public class Main implements Callable<Void> {
                 probsForCat = new TreeMap<>();
                 condProb.put(word, probsForCat);
             }
-            for (String cat : cats) {
+            for (String cat : trainingSets.keySet()) {
                 WordCounter countsForCat = trainingSets.get(cat);
                 double probOfWordGivenCat = countsForCat.getLaplaseProb(word)
                         .orElse(vocabulary.getLaplaseProb(word));
                 probsForCat.put(cat, probOfWordGivenCat);
             }
         });
+        return condProb;
     }
 
-    public void computePrior(Set<String> cats,
-            List<String> ref, Map<String, Integer> docsInTrainingSet,
-            Map<String, Double> prior) {
-        int docCount = ref.size();
-        cats.forEach(cat -> {
-            double priorForCat = (double) docsInTrainingSet.get(cat) / docCount;
-            prior.put(cat, priorForCat);
+    /**
+     * Compute the probability that a document has a given category.
+     *  
+     * @param docCount The total count of documents in the training set
+     * @param trainingSets The training sets
+     * @return 
+     */
+    public Map<String, Double> computePrior(int docCount, Map<String, WordCounter> trainingSets) {
+        Map<String, Double> prior = new HashMap<>();
+        trainingSets.forEach((cat, count) -> {
+            double priorProb = count.getNumDocs() / docCount;
+            prior.put(cat, priorProb);
         });
+        return prior;
     }
 
-    public void buildTrainingSets(List<String> ref,
-            Map<String, WordCounter> trainingSets, List<WordCounter> counts,
-            Map<String, Integer> docsInTrainingSet) {
-        for (int i = 0; i < ref.size(); i++) {
-            String cat = ref.get(i);
+    /**
+     * Method to build the training sets. This method scans the input training
+     * cases and groups them by category. The word counts for all cases of a
+     * given category are merged into a single word count.
+     * @param cases The training cases
+     * @return The training sets.
+     */
+    public Map<String, WordCounter> buildTrainingSets(List<Map<String, Object>> cases) {
+        Map<String, WordCounter> trainingSets = new HashMap<>();
+        cases.forEach((trainingCase) -> {
+            String cat = trainingCase.get("theCode").toString();
             WordCounter countsForCat = trainingSets.get(cat);
             if (countsForCat == null) {
                 countsForCat = new WordCounter();
                 trainingSets.put(cat, countsForCat);
             }
-            countsForCat.updateCounts(counts.get(i));
-            int numDocs = docsInTrainingSet.getOrDefault(cat, 0);
-            numDocs++;
-            docsInTrainingSet.put(cat, numDocs);
-        }
+            countsForCat.updateCounts((WordCounter)trainingCase.get("counts"));
+        });
+        return trainingSets;
     }
 
 }

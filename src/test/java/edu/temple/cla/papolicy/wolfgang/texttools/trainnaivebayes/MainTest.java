@@ -50,9 +50,7 @@ import picocli.CommandLine;
  */
 public class MainTest {
     
-    List<String> ref = new ArrayList<>();
-    List<String> ids = new ArrayList<>();
-    Vocabulary vocabulary = new Vocabulary();
+    List<Map<String, Object>> cases = new ArrayList<>();
     List<WordCounter> counts = new ArrayList<>();
     String[] args = {"--datasource", "TestDb.txt",
                 "--table_name", "TestTable",
@@ -64,6 +62,7 @@ public class MainTest {
     Map<String, WordCounter> trainingSets = new TreeMap<>();
     Map<String, Double> prior = new TreeMap<>();
     Map<String, Map<String, Double>> condProb = new TreeMap<>();
+    Vocabulary vocabulary;
 
     public MainTest() {
     }
@@ -74,7 +73,7 @@ public class MainTest {
         CommonFrontEnd commonFrontEnd = new CommonFrontEnd();
         CommandLine commandLine = new CommandLine(commonFrontEnd);
         commandLine.parse(args);
-        commonFrontEnd.loadData(ids, ref, vocabulary, counts);    
+        vocabulary = commonFrontEnd.loadData(cases);    
     }
     
     
@@ -83,10 +82,9 @@ public class MainTest {
     public void testComputeConditionalProbs() {
         System.out.println("COMPUTE CONDITIONAL PROBS");
         Main main = new Main(args);
-        main.buildTrainingSets(ref, trainingSets, counts, docsInTrainingSet);
-        Set<String> cats = trainingSets.keySet();
-        main.computePrior(cats, ref, docsInTrainingSet, prior);
-        main.computeConditionalProbs(vocabulary, cats, trainingSets, condProb);
+        trainingSets = main.buildTrainingSets(cases);
+        prior = main.computePrior(cases.size(), trainingSets);
+        condProb = main.computeConditionalProbs(vocabulary, trainingSets);
         System.out.println(condProb);
     }
 
@@ -94,9 +92,8 @@ public class MainTest {
     public void testComputePrior() {
         System.out.println("COMPUTE PRIOR");
         Main main = new Main(args);
-        main.buildTrainingSets(ref, trainingSets, counts, docsInTrainingSet);
-        Set<String> cats = trainingSets.keySet();
-        main.computePrior(cats, ref, docsInTrainingSet, prior);
+        trainingSets = main.buildTrainingSets(cases);
+        prior = main.computePrior(cases.size(), trainingSets);
         System.out.println(prior);
     }
 
@@ -104,11 +101,8 @@ public class MainTest {
     public void testBuildTrainingSets() {
         System.out.println("BUILD TRAINING SETS");
         Main main = new Main(args);
-        main.buildTrainingSets(ref, trainingSets, counts, docsInTrainingSet);
-        System.out.println(ref);
-        System.out.println(counts);
+        trainingSets = main.buildTrainingSets(cases);
         System.out.println(trainingSets);
-        System.out.println(docsInTrainingSet);
     }
     
 }
